@@ -24,7 +24,7 @@ severity_count = {
     'Info': 0
 }
 
-# Funzione per determinare il colore del box in base alla gravità e per incrementare i contatori delle vulns
+# Funzione per determinare il colore del box in base alla gravità e per incrementare i conteggi
 def get_severity_info(severity):
     if severity == 'Critical':
         severity_count['Critical'] += 1
@@ -63,7 +63,7 @@ def escape_latex_special_chars(text):
 report_name = escape_latex_special_chars(data.get('report_name', 'Pentest Report'))
 report_scope = escape_latex_special_chars(data.get('report_scope', 'N/A'))
 
-# Template LaTeX 
+# Template LaTeX iniziale con supporto per caratteri accentati e grafico a torta
 latex_report = r"""
 \documentclass{article}
 \usepackage[utf8]{inputenc} % Supporto per caratteri accentati
@@ -103,7 +103,7 @@ In questa sezione viene calcolato il rischio basato sulle vulnerabilità trovate
     sum=auto, % Disattiva la modalità percentuale
     text=legend,
     radius=3, % Dimensione del grafico
-    color={red, orange, yellow, green, blue}
+    color={PIE_COLORS}  % Specifica i colori dinamicamente
 ]{
 PIE_DATA
 }
@@ -170,22 +170,30 @@ info_count = severity_count['Info']
 
 # Creare i dati del grafico a torta dinamicamente, saltando i conteggi pari a 0
 pie_data = []
+pie_colors = []
 if critical_count > 0:
     pie_data.append(f"{critical_count}/Critical")
+    pie_colors.append("red")
 if high_count > 0:
     pie_data.append(f"{high_count}/High")
+    pie_colors.append("orange")
 if medium_count > 0:
     pie_data.append(f"{medium_count}/Medium")
+    pie_colors.append("yellow")
 if low_count > 0:
     pie_data.append(f"{low_count}/Low")
+    pie_colors.append("green")
 if info_count > 0:
     pie_data.append(f"{info_count}/Info")
+    pie_colors.append("blue")
 
-# Unire i dati del grafico a torta
+# Unire i dati del grafico a torta e i colori
 pie_data_str = ', '.join(pie_data)
+pie_colors_str = ', '.join(pie_colors)
 
 # Sostituire i dati del grafico a torta nel template LaTeX
 latex_report = latex_report.replace("PIE_DATA", pie_data_str)
+latex_report = latex_report.replace("PIE_COLORS", pie_colors_str)
 
 # Chiudere il documento LaTeX
 latex_report += "\\end{document}"
