@@ -150,7 +150,7 @@ for vuln in data.get('report_vulns', []):
     \\textbf{{Descrizione:}} \\ 
     {description} \\\\
 
-    \\textbf{{Prova di concetto (PoC):}} \\ 
+    \\textbf{{Proof Of Concept (PoC):}} \\ 
     {poc} \\\\
 
     \\textbf{{Riferimenti:}} \\ 
