@@ -1,5 +1,6 @@
 import json
 import argparse
+from datetime import datetime
 
 # Configurazione degli argomenti della riga di comando
 parser = argparse.ArgumentParser(description="Genera un report LaTeX da un file JSON di Vulnrepo.")
@@ -59,11 +60,18 @@ def escape_latex_special_chars(text):
         text = text.replace(char, escaped_char)
     return text
 
+# Funzione per convertire il timestamp in una data nel formato italiano
+def convert_timestamp_to_date(timestamp):
+    timestamp_seconds = timestamp / 1000
+    date = datetime.utcfromtimestamp(timestamp_seconds)
+    # Restituisci la data in formato DD/MM/YYYY
+    return date.strftime('%d/%m/%Y')
+
 # Leggere il report_name e report_scope dal file JSON
 report_name = escape_latex_special_chars(data.get('report_name', 'Pentest Report'))
 report_scope = escape_latex_special_chars(data.get('report_scope', 'N/A'))
 
-# Template LaTeX 
+# Template LaTeX iniziale 
 latex_report = r"""
 \documentclass{article}
 \usepackage[utf8]{inputenc} % Supporto per caratteri accentati
@@ -113,19 +121,19 @@ PIE_DATA
 % Sezione Issues
 \section{Issues}
 \noindent
+Sezione contenente i problemi riscontrati.
 """ 
 
 # Estrarre informazioni dal JSON e formattare ogni vulnerabilità
 for vuln in data.get('report_vulns', []):
-    
     title = escape_latex_special_chars(vuln.get('title', 'N/A'))
-    description = escape_latex_special_chars(vuln.get('desc', 'N/A')) 
+    description = escape_latex_special_chars(vuln.get('desc', 'N/A'))  
     severity = vuln.get('severity', 'N/A')
     poc = escape_latex_special_chars(vuln.get('poc', 'N/A')) 
     references = vuln.get('ref', 'N/A')
-    date = vuln.get('date', 'N/A')  
-    status = vuln.get('status', 'Open (Waiting for review)')  
-
+    date_timestamp = vuln.get('date', 'N/A')  
+    date = convert_timestamp_to_date(date_timestamp) if isinstance(date_timestamp, int) else 'N/A' 
+    status = vuln.get('status', 'Open (Waiting for review)') 
     # Ottenere i colori in base alla gravità e aggiornare i conteggi
     colback, colframe = get_severity_info(severity)
     
@@ -134,23 +142,22 @@ for vuln in data.get('report_vulns', []):
     if references != 'N/A':
         refs = references.split('\n')  
         for ref in refs:
-            ref = ref.strip()  # Rimuove eventuali spazi bianchi prima e dopo il riferimento
+            ref = ref.strip()  
             if ref:  # Controlla che il riferimento non sia vuoto
-                ref = escape_latex_special_chars(ref)  
+                ref = escape_latex_special_chars(ref) 
                 formatted_references += f"\\href{{{ref}}}{{{ref}}}\\\\ \n"  
 
     # Aggiungere una sezione per ogni vulnerabilità
     latex_report += f"""
+    \\begin{{tcolorbox}}[colback={colback}, colframe={colframe}, title={severity}]
     \\subsection{{{title}}}
     \\noindent
-    \\begin{{tcolorbox}}[colback={colback}, colframe={colframe}, title={severity}]
-    \\textbf{{Gravità:}} {severity}
     \\end{{tcolorbox}}
 
     \\textbf{{Descrizione:}} \\ 
     {description} \\\\
 
-    \\textbf{{Proof Of Concept (PoC):}} \\ 
+    \\textbf{{Proof Of Concept(PoC):}} \\ 
     {poc} \\\\
 
     \\textbf{{Riferimenti:}} \\ 
@@ -160,14 +167,14 @@ for vuln in data.get('report_vulns', []):
     \\textbf{{Stato:}} {status} \\ 
     """
     
-# Calcolo valori grafico a torta
+
 critical_count = severity_count['Critical']
 high_count = severity_count['High']
 medium_count = severity_count['Medium']
 low_count = severity_count['Low']
 info_count = severity_count['Info']
 
-# Creare i dati del grafico a torta dinamicamente, saltando i conteggi pari a 0
+# Creare i dati del grafico a torta dinamicamente
 pie_data = []
 pie_colors = []
 if critical_count > 0:
