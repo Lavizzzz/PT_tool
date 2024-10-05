@@ -63,7 +63,7 @@ def escape_latex_special_chars(text):
 report_name = escape_latex_special_chars(data.get('report_name', 'Pentest Report'))
 report_scope = escape_latex_special_chars(data.get('report_scope', 'N/A'))
 
-# Template LaTeX iniziale con supporto per caratteri accentati e grafico a torta
+# Template LaTeX 
 latex_report = r"""
 \documentclass{article}
 \usepackage[utf8]{inputenc} % Supporto per caratteri accentati
@@ -113,32 +113,31 @@ PIE_DATA
 % Sezione Issues
 \section{Issues}
 \noindent
-Sezione contenente i problemi riscontrati.
 """ 
 
 # Estrarre informazioni dal JSON e formattare ogni vulnerabilità
 for vuln in data.get('report_vulns', []):
-    # Escapare i caratteri speciali nel titolo
+    
     title = escape_latex_special_chars(vuln.get('title', 'N/A'))
-    description = escape_latex_special_chars(vuln.get('desc', 'N/A'))  # Anche la descrizione potrebbe avere caratteri speciali
+    description = escape_latex_special_chars(vuln.get('desc', 'N/A')) 
     severity = vuln.get('severity', 'N/A')
-    poc = escape_latex_special_chars(vuln.get('poc', 'N/A'))  # Escapare anche la PoC
+    poc = escape_latex_special_chars(vuln.get('poc', 'N/A')) 
     references = vuln.get('ref', 'N/A')
-    date = vuln.get('date', 'N/A')  # Aggiungere la data dal JSON
-    status = vuln.get('status', 'Open (Waiting for review)')  # Aggiungere lo status
+    date = vuln.get('date', 'N/A')  
+    status = vuln.get('status', 'Open (Waiting for review)')  
 
     # Ottenere i colori in base alla gravità e aggiornare i conteggi
     colback, colframe = get_severity_info(severity)
     
-    # Creare una stringa con i riferimenti formattati come link ipertestuali
+    # Creare una stringa con i riferimenti formattati
     formatted_references = ""
     if references != 'N/A':
-        refs = references.split('\n')  # Assumendo che i riferimenti siano separati da nuove righe
+        refs = references.split('\n')  
         for ref in refs:
             ref = ref.strip()  # Rimuove eventuali spazi bianchi prima e dopo il riferimento
             if ref:  # Controlla che il riferimento non sia vuoto
-                ref = escape_latex_special_chars(ref)  # Escapare caratteri speciali nei riferimenti
-                formatted_references += f"\\href{{{ref}}}{{{ref}}}\\\\ \n"  # Aggiungere una riga per ogni link
+                ref = escape_latex_special_chars(ref)  
+                formatted_references += f"\\href{{{ref}}}{{{ref}}}\\\\ \n"  
 
     # Aggiungere una sezione per ogni vulnerabilità
     latex_report += f"""
@@ -161,7 +160,7 @@ for vuln in data.get('report_vulns', []):
     \\textbf{{Stato:}} {status} \\ 
     """
     
-# Usare i numeri delle vulnerabilità invece delle percentuali per il grafico a torta
+# Calcolo valori grafico a torta
 critical_count = severity_count['Critical']
 high_count = severity_count['High']
 medium_count = severity_count['Medium']
