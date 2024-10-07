@@ -1,6 +1,6 @@
 import json
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone  # Aggiungi timezone
 
 # Configurazione degli argomenti della riga di comando
 parser = argparse.ArgumentParser(description="Genera un report LaTeX da un file JSON di Vulnrepo.")
@@ -23,6 +23,14 @@ severity_count = {
     'Medium': 0,
     'Low': 0,
     'Info': 0
+}
+
+# Dizionario per convertire il numero dello stato in testo
+status_map = {
+    1: "Open (Waiting for review)",
+    2: "Fix In Progress",
+    3: "Fixed",
+    4: "Won't Fix"
 }
 
 # Funzione per determinare il colore del box in base alla gravità e per incrementare i conteggi
@@ -60,10 +68,10 @@ def escape_latex_special_chars(text):
         text = text.replace(char, escaped_char)
     return text
 
-# Funzione per convertire il timestamp in una data nel formato italiano
+# Funzione per convertire il timestamp in una data 
 def convert_timestamp_to_date(timestamp):
     timestamp_seconds = timestamp / 1000
-    date = datetime.utcfromtimestamp(timestamp_seconds)
+    date = datetime.fromtimestamp(timestamp_seconds, timezone.utc)
     # Restituisci la data in formato DD/MM/YYYY
     return date.strftime('%d/%m/%Y')
 
@@ -80,6 +88,7 @@ latex_report = r"""
 \usepackage{tcolorbox} % Per i riquadri di gravità
 \usepackage{hyperref} % Per i collegamenti ipertestuali
 \usepackage{pgf-pie} % Per il grafico a torta
+\usepackage[table]{xcolor} % Pacchetto per i colori nelle tabelle
 \geometry{a4paper, margin=1in}
 
 % Formattazione dei titoli
@@ -103,7 +112,6 @@ latex_report = r"""
 % Sezione Statistics and Risk con grafico a torta
 \section{Statistics and Risk}
 \noindent
-In questa sezione viene calcolato il rischio basato sulle vulnerabilità trovate.
 
 \begin{center}
 \begin{tikzpicture}
@@ -121,7 +129,7 @@ PIE_DATA
 % Sezione Issues
 \section{Issues}
 \noindent
-Sezione contenente i problemi riscontrati.
+Sezione contenente le vulnerabilità riscontrate.
 """ 
 
 # Estrarre informazioni dal JSON e formattare ogni vulnerabilità
@@ -133,7 +141,9 @@ for vuln in data.get('report_vulns', []):
     references = vuln.get('ref', 'N/A')
     date_timestamp = vuln.get('date', 'N/A')  
     date = convert_timestamp_to_date(date_timestamp) if isinstance(date_timestamp, int) else 'N/A' 
-    status = vuln.get('status', 'Open (Waiting for review)') 
+    status_number = vuln.get('status', 'N/A')  
+    status = status_map.get(status_number, 'Unknown Status')   
+
     # Ottenere i colori in base alla gravità e aggiornare i conteggi
     colback, colframe = get_severity_info(severity)
     
@@ -145,7 +155,7 @@ for vuln in data.get('report_vulns', []):
             ref = ref.strip()  
             if ref:  # Controlla che il riferimento non sia vuoto
                 ref = escape_latex_special_chars(ref) 
-                formatted_references += f"\\href{{{ref}}}{{{ref}}}\\\\ \n"  
+                formatted_references += f"\\href{{{ref}}}{{{ref}}}\\ \n"  
 
     # Aggiungere una sezione per ogni vulnerabilità
     latex_report += f"""
@@ -164,7 +174,7 @@ for vuln in data.get('report_vulns', []):
     {formatted_references} \\\\
 
     \\textbf{{Data:}} {date} \\ 
-    \\textbf{{Stato:}} {status} \\ 
+    \\textbf{{Stato:}} {status} \\\\ 
     """
     
 
